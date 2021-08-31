@@ -6,7 +6,7 @@
 #include <stdint.h>
 
 #include "bindings.h"
-#include "include/dart_api_dl.h"
+#include "lib/include/dart_api_dl.h"
 
 void main() {
 }
