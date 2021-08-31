@@ -6,12 +6,15 @@ void main() async {
     final expectedValue = 760;
     final integration = BindingIntegration();
 
-    final result = integration.testBinding(expectedValue);
-    result.then((_) {
-      // testCallback(_value);
-      expectAsync0(() {
-        // expect(actualValue, equals(expectedValue));
-      }, count: 1)();
-    });
+    // final result = integration.testBinding(expectedValue);
+    // result.then((_) {
+    //   // testCallback(_value);
+    //   expectAsync0(() {
+    //     // expect(actualValue, equals(expectedValue));
+    //   }, count: 1)();
+    // });
+
+    final value = integration.initDartApi();
+    print('Value $value');
   }, timeout: Timeout(Duration(seconds: 1)));
 }

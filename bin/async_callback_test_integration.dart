@@ -57,6 +57,9 @@ class RpcIntegration {
 typedef TestBindingFunc = Void Function(Int32);
 typedef TestBinding = void Function(int);
 
+typedef InitDartApiFunc = IntPtr Function(Pointer<Void>);
+typedef InitDartApi = int Function(Pointer<Void>);
+
 class BindingIntegration {
   late final DynamicLibrary _dl;
 
@@ -74,9 +77,18 @@ class BindingIntegration {
     return _testBinding(value);
   }
 
+  int initDartApi() {
+    return _initDartApi(NativeApi.initializeApiDLData);
+  }
+
   TestBinding get _testBinding {
     final nativeFnPointer =
         _dl.lookup<NativeFunction<TestBindingFunc>>('test_binding_func');
     return nativeFnPointer.asFunction<TestBinding>();
+  }
+  
+  InitDartApi get _initDartApi {
+    final nativeFnPointer = _dl.lookup<NativeFunction<InitDartApiFunc>>('InitDartApiDL');
+    return nativeFnPointer.asFunction<InitDartApi>();
   }
 }
