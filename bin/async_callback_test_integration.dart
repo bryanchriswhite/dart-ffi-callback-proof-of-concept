@@ -66,18 +66,19 @@ typedef RegisterSendPortNative = Void Function(Int64 sendPort);
 typedef RegisterSendPort = void Function(int sendPort);
 
 class BindingIntegration {
-  int _completerCount = 0;
-  
+  int _completerId = 0;
+
   late final DynamicLibrary _dl;
   late final ReceivePort _receivePort;
-  
+
   final Map<int, Completer> _completers = {};
 
   BindingIntegration() {
     _dl = dlOpen();
 
     _initDartApi(NativeApi.initializeApiDLData);
-    _receivePort = ReceivePort()..listen(_receiveHandler);
+
+    // _receivePort = ReceivePort()..listen(_receiveHandler);
     //-- isolate_rpc
     // _rpc = RpcProvider(dispatchFunction);
     // _rpc.registerRpcHandler(ACTION_NAME, handlerFunction);
@@ -90,17 +91,16 @@ class BindingIntegration {
   }
 
   Future<int> testBinding(int value) async {
-    // final _completer = Completer<int>();
-    
-    // NB: persist completers in higher scope.
-    // _completers[_completerCount] = _completer;
-    // _completerCount++;
+    final _completer = Completer<int>();
+    _receivePort = ReceivePort()..listen((dynamic msg) {
+      print('Dart | ReceivePort listener');
+      _completer.complete(msg);
+    });
 
     // NB: sends message on send port when complete.
     _testBinding(value, _receivePort.sendPort.nativePort);
 
-    // return _completer.future;
-    return Future.value(100);
+    return _completer.future;
   }
 
   void _receiveHandler(dynamic msg) {

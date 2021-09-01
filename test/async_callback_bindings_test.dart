@@ -8,7 +8,7 @@ void main() {
 
     final actualValue = await integration.testBinding(expectedValue);
     await asyncSleep(500);
-    // expect(actualValue, equals(expectedValue));
+    expect(actualValue, equals(expectedValue));
   }, timeout: Timeout(Duration(seconds: 1)));
 }
 
