@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ffi';
 import 'dart:isolate';
 import 'dart:io';
@@ -55,8 +56,8 @@ class RpcIntegration {
   }
 }
 
-typedef TestBindingNative = Void Function(Int32);
-typedef TestBinding = void Function(int);
+typedef TestBindingNative = Void Function(Int32, IntPtr);
+typedef TestBinding = void Function(int, int);
 
 typedef InitDartApiNative = IntPtr Function(Pointer<Void>);
 typedef InitDartApi = int Function(Pointer<Void>);
@@ -65,13 +66,21 @@ typedef RegisterSendPortNative = Void Function(Int64 sendPort);
 typedef RegisterSendPort = void Function(int sendPort);
 
 class BindingIntegration {
+  int _completerCount = 0;
+  
   late final DynamicLibrary _dl;
   late final ReceivePort _receivePort;
+  
+  final Map<int, Completer> _completers = {};
 
   BindingIntegration() {
     _dl = dlOpen();
+
+    _initDartApi(NativeApi.initializeApiDLData);
     _receivePort = ReceivePort()..listen(_receiveHandler);
-    _registerSendPort(_receivePort.sendPort.nativePort);
+    //-- isolate_rpc
+    // _rpc = RpcProvider(dispatchFunction);
+    // _rpc.registerRpcHandler(ACTION_NAME, handlerFunction);
   }
 
   static DynamicLibrary dlOpen() {
@@ -80,16 +89,22 @@ class BindingIntegration {
     return DynamicLibrary.open('./libbindings.so');
   }
 
-  Future<void> testBinding(int value) async {
-    return _testBinding(value);
-  }
+  Future<int> testBinding(int value) async {
+    // final _completer = Completer<int>();
+    
+    // NB: persist completers in higher scope.
+    // _completers[_completerCount] = _completer;
+    // _completerCount++;
 
-  int initDartApi() {
-    return _initDartApi(NativeApi.initializeApiDLData);
+    // NB: sends message on send port when complete.
+    _testBinding(value, _receivePort.sendPort.nativePort);
+
+    // return _completer.future;
+    return Future.value(100);
   }
 
   void _receiveHandler(dynamic msg) {
-    print('Dart | receiveHandler:93 $msg');
+    print('Dart | receiveHandler:94 $msg');
   }
 
   TestBinding get _testBinding {
@@ -97,15 +112,10 @@ class BindingIntegration {
         _dl.lookup<NativeFunction<TestBindingNative>>('test_binding_func');
     return nativeFnPointer.asFunction<TestBinding>();
   }
-  
+
   InitDartApi get _initDartApi {
-    final nativeFnPointer = _dl.lookup<NativeFunction<InitDartApiNative>>('init_dart_api_dl');
+    final nativeFnPointer =
+        _dl.lookup<NativeFunction<InitDartApiNative>>('init_dart_api_dl');
     return nativeFnPointer.asFunction<InitDartApi>();
-  }
-  
-  
-  RegisterSendPort get _registerSendPort {
-    final nativeFnPointer = _dl.lookup<NativeFunction<RegisterSendPortNative>>('register_send_port');
-    return nativeFnPointer.asFunction<RegisterSendPort>();
   }
 }
