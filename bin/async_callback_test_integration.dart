@@ -1,4 +1,5 @@
 import 'dart:ffi';
+import 'dart:isolate';
 import 'dart:io';
 
 import 'package:isolate_rpc/classes/Message.dart';
@@ -54,17 +55,23 @@ class RpcIntegration {
   }
 }
 
-typedef TestBindingFunc = Void Function(Int32);
+typedef TestBindingNative = Void Function(Int32);
 typedef TestBinding = void Function(int);
 
-typedef InitDartApiFunc = IntPtr Function(Pointer<Void>);
+typedef InitDartApiNative = IntPtr Function(Pointer<Void>);
 typedef InitDartApi = int Function(Pointer<Void>);
+
+typedef RegisterSendPortNative = Void Function(Int64 sendPort);
+typedef RegisterSendPort = void Function(int sendPort);
 
 class BindingIntegration {
   late final DynamicLibrary _dl;
+  late final ReceivePort _receivePort;
 
   BindingIntegration() {
     _dl = dlOpen();
+    _receivePort = ReceivePort()..listen(_receiveHandler);
+    _registerSendPort(_receivePort.sendPort.nativePort);
   }
 
   static DynamicLibrary dlOpen() {
@@ -81,14 +88,24 @@ class BindingIntegration {
     return _initDartApi(NativeApi.initializeApiDLData);
   }
 
+  void _receiveHandler(dynamic msg) {
+    print('Dart | receiveHandler:93 $msg');
+  }
+
   TestBinding get _testBinding {
     final nativeFnPointer =
-        _dl.lookup<NativeFunction<TestBindingFunc>>('test_binding_func');
+        _dl.lookup<NativeFunction<TestBindingNative>>('test_binding_func');
     return nativeFnPointer.asFunction<TestBinding>();
   }
   
   InitDartApi get _initDartApi {
-    final nativeFnPointer = _dl.lookup<NativeFunction<InitDartApiFunc>>('InitDartApiDL');
+    final nativeFnPointer = _dl.lookup<NativeFunction<InitDartApiNative>>('init_dart_api_dl');
     return nativeFnPointer.asFunction<InitDartApi>();
+  }
+  
+  
+  RegisterSendPort get _registerSendPort {
+    final nativeFnPointer = _dl.lookup<NativeFunction<RegisterSendPortNative>>('register_send_port');
+    return nativeFnPointer.asFunction<RegisterSendPort>();
   }
 }
