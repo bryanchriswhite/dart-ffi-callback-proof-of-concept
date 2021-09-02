@@ -6,6 +6,7 @@
 #include <stdint.h>
 
 #include "bindings.h"
+#include "./include/dart_api.h"
 #include "./include/dart_api_dl.h"
 
 int64_t main_send_port;
@@ -28,4 +29,6 @@ void test_binding_func(int32_t value, intptr_t send_port) {
     printf("C | calling Dart_PostCObject_DL:28 %d\n", value);
     auto result = Dart_PostCObject_DL(send_port, &dart_object);
     printf("C | calling result: %d\n", result);
+    Dart_IsolateGroup isolate = Dart_CurrentIsolateGroup();
+    printf("C | dart isolate %p\n", isolate);
 }
