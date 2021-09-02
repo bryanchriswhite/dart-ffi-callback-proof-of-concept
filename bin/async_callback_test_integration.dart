@@ -3,58 +3,58 @@ import 'dart:ffi';
 import 'dart:isolate';
 import 'dart:io';
 
-import 'package:isolate_rpc/classes/Message.dart';
-import 'package:isolate_rpc/isolate_rpc.dart';
+// import 'package:isolate_rpc/classes/Message.dart';
+// import 'package:isolate_rpc/isolate_rpc.dart';
 
 const TEST_SIGNAL = 'test_signal';
 const TEST_RPC = 'test_rpc';
 const defaultRpcTimeout = 50;
 
-RpcProvider? local;
-RpcProvider? remote;
+// RpcProvider? local;
+// RpcProvider? remote;
 
-class RpcIntegration {
-  static const DefaultRpcTimeout = 50;
-
-  late RpcProvider _local;
-  late RpcProvider _remote;
-
-  // TODO: look up how to simplify
-  RpcIntegration() {
-    _local = RpcProvider(_localDispatch, DefaultRpcTimeout);
-    _remote = RpcProvider(_remoteDispatch, DefaultRpcTimeout);
-
-    // TODO: think through error handling
-    RpcProvider.error.subscribe((args) {
-      print("ERROR: ");
-      print(args);
-    });
-
-    print("main->registerSignalHandler():29");
-    remote?.registerRpcHandler(TEST_RPC, (value) {
-      print("main->registerSignalHandler->fn_body:29");
-      return value;
-    });
-  }
-
-  Future<int> client_SendFile(int value) async {
-    print("main->client_SendFile->local.rpc():35");
-    dynamic _value = await local?.rpc(TEST_RPC, value);
-    print(_value);
-    print("main->client_SendFile->local.rpc()_done:37");
-    return _value;
-  }
-
-  void _localDispatch(MessageClass message, List<dynamic>? transfer) {
-    print("main->localDispatch:22");
-    _remote.dispatch(message);
-  }
-
-  void _remoteDispatch(MessageClass message, List<dynamic>? transfer) {
-    print("main->remoteDispatch:22");
-    _local.dispatch(message);
-  }
-}
+// class RpcIntegration {
+//   static const DefaultRpcTimeout = 50;
+//
+//   late RpcProvider _local;
+//   late RpcProvider _remote;
+//
+//   // TODO: look up how to simplify
+//   RpcIntegration() {
+//     _local = RpcProvider(_localDispatch, DefaultRpcTimeout);
+//     _remote = RpcProvider(_remoteDispatch, DefaultRpcTimeout);
+//
+//     // TODO: think through error handling
+//     RpcProvider.error.subscribe((args) {
+//       print("ERROR: ");
+//       print(args);
+//     });
+//
+//     print("main->registerSignalHandler():29");
+//     remote?.registerRpcHandler(TEST_RPC, (value) {
+//       print("main->registerSignalHandler->fn_body:29");
+//       return value;
+//     });
+//   }
+//
+//   Future<int> client_SendFile(int value) async {
+//     print("main->client_SendFile->local.rpc():35");
+//     dynamic _value = await local?.rpc(TEST_RPC, value);
+//     print(_value);
+//     print("main->client_SendFile->local.rpc()_done:37");
+//     return _value;
+//   }
+//
+//   void _localDispatch(MessageClass message, List<dynamic>? transfer) {
+//     print("main->localDispatch:22");
+//     _remote.dispatch(message);
+//   }
+//
+//   void _remoteDispatch(MessageClass message, List<dynamic>? transfer) {
+//     print("main->remoteDispatch:22");
+//     _local.dispatch(message);
+//   }
+// }
 
 typedef TestBindingNative = Void Function(Int32, IntPtr);
 typedef TestBinding = void Function(int, int);
@@ -77,11 +77,6 @@ class BindingIntegration {
     _dl = dlOpen();
 
     _initDartApi(NativeApi.initializeApiDLData);
-
-    // _receivePort = ReceivePort()..listen(_receiveHandler);
-    //-- isolate_rpc
-    // _rpc = RpcProvider(dispatchFunction);
-    // _rpc.registerRpcHandler(ACTION_NAME, handlerFunction);
   }
 
   static DynamicLibrary dlOpen() {
@@ -95,16 +90,17 @@ class BindingIntegration {
     _receivePort = ReceivePort()..listen((dynamic msg) {
       print('Dart | ReceivePort listener');
       _completer.complete(msg);
+
+      // TODO: isolate_rpc
+      // _rpc = RpcProvider(dispatchFunction);
+      // _rpc.registerRpcHandler(ACTION_NAME, handlerFunction);
+    // unregister on complete!
     });
 
     // NB: sends message on send port when complete.
     _testBinding(value, _receivePort.sendPort.nativePort);
 
     return _completer.future;
-  }
-
-  void _receiveHandler(dynamic msg) {
-    print('Dart | receiveHandler:94 $msg');
   }
 
   TestBinding get _testBinding {
