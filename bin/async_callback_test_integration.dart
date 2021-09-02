@@ -66,16 +66,11 @@ typedef RegisterSendPortNative = Void Function(Int64 sendPort);
 typedef RegisterSendPort = void Function(int sendPort);
 
 class BindingIntegration {
-  int _completerId = 0;
-
   late final DynamicLibrary _dl;
   late final ReceivePort _receivePort;
 
-  final Map<int, Completer> _completers = {};
-
   BindingIntegration() {
     _dl = dlOpen();
-
     _initDartApi(NativeApi.initializeApiDLData);
   }
 
