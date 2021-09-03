@@ -1,0 +1,14 @@
+# Files and directories created by pub.
+.dart_tool/
+.packages
+
+# Conventional directory for build output.
+build/
+
+.idea/
+
+Makefile
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+libbindings.so*
