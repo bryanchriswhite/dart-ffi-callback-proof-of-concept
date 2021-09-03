@@ -6,18 +6,18 @@ void main() {
   group('async callback proof-of-concepts', () {
     test('native callbacks to dart via SendPort message passing', () async {
       final expectedValue = 760;
-      final integration = NativeAsync();
+      final nativeAsync = NativeAsync();
 
-      final actualValue = await integration.asyncExample(expectedValue);
+      final actualValue = await nativeAsync.asyncExample(expectedValue);
       await asyncSleep(100);
       expect(actualValue, equals(expectedValue));
     }, timeout: Timeout(Duration(seconds: 1)));
 
     test('callbacks via isolate_rpc', () async {
       final expectedValue = 12;
-      final integration = IsolateRpcAsync();
-      final actualValue = await integration.asyncExample(expectedValue);
+      final isolateAsync = IsolateRpcAsync();
 
+      final actualValue = await isolateAsync.asyncExample(expectedValue);
       expect(actualValue, equals(expectedValue));
     });
   }, timeout: Timeout(Duration(seconds: 2)));

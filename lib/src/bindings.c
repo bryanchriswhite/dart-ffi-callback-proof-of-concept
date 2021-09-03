@@ -18,10 +18,13 @@ intptr_t init_dart_api_dl(void* data) {
   return Dart_InitializeApiDL(data);
 }
 
-void async_example(int32_t value, intptr_t send_port) {
+void async_example(int32_t value, intptr_t callback_port) {
+    // Construct Dart object from C API.
+    //  (see: https://github.com/dart-lang/sdk/blob/master/runtime/include/dart_native_api.h#L19)
     Dart_CObject dart_object;
     dart_object.type = Dart_CObject_kInt32;
     dart_object.value.as_int32 = value;
 
-    auto result = Dart_PostCObject_DL(send_port, &dart_object);
+    // Send dart object response.
+    auto result = Dart_PostCObject_DL(callback_port, &dart_object);
 }
