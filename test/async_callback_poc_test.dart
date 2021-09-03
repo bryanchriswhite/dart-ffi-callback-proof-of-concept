@@ -5,7 +5,7 @@ void main() {
   group('async callback proof-of-concepts', () {
     test('native callbacks to dart via SendPort message passing', () async {
       final expectedValue = 760;
-      final integration = BindingIntegration();
+      final integration = NativeAsync();
 
       final actualValue = await integration.asyncExample(expectedValue);
       await asyncSleep(100);
@@ -14,7 +14,7 @@ void main() {
 
     test('callbacks via isolate_rpc', () async {
       final expectedValue = 12;
-      final integration = RpcIntegration();
+      final integration = IsolateRpcAsync();
       final actualValue = await integration.asyncExample(expectedValue);
 
       expect(actualValue, equals(expectedValue));

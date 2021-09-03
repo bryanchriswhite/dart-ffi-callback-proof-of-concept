@@ -6,59 +6,101 @@ import 'dart:io';
 import 'package:isolate_rpc/classes/Message.dart';
 import 'package:isolate_rpc/isolate_rpc.dart';
 
-const TEST_SIGNAL = 'test_signal';
-const TEST_RPC = 'test_rpc';
-const defaultRpcTimeout = 50;
+const ASYNC_EXAMPLE = 'async_example';
+const DefaultRpcTimeout = 50;
 
-class RpcIntegration {
-  static const DefaultRpcTimeout = 50;
-
-  late RpcProvider _local;
-  late RpcProvider _remote;
-
-  // TODO: look up how to simplify
-  RpcIntegration() {
-    _local = RpcProvider(_localDispatch, DefaultRpcTimeout);
-    _remote = RpcProvider(_remoteDispatch, DefaultRpcTimeout);
-
-    // TODO: think through error handling
-    RpcProvider.error.subscribe((args) {
-      print("ERROR: $args");
-    });
-
-    _remote.registerRpcHandler(TEST_RPC, (value) {
-      return value;
-    });
-  }
-
-  Future<int> asyncExample(int value) async {
-    dynamic _value = await _local.rpc(TEST_RPC, value);
-    return _value;
-  }
-
-  void _localDispatch(MessageClass message, List<dynamic>? transfer) {
-    _remote.dispatch(message);
-  }
-
-  void _remoteDispatch(MessageClass message, List<dynamic>? transfer) {
-    _local.dispatch(message);
-  }
-}
-
-typedef TestBindingNative = Void Function(Int32, IntPtr);
+//TODO: move to definitions.dart
+typedef AsyncExampleNative = Void Function(Int32, IntPtr);
 typedef AsyncExample = void Function(int, int);
 
 typedef InitDartApiNative = IntPtr Function(Pointer<Void>);
 typedef InitDartApi = int Function(Pointer<Void>);
 
-typedef RegisterSendPortNative = Void Function(Int64 sendPort);
-typedef RegisterSendPort = void Function(int sendPort);
+abstract class AsyncInterface {
+  Future<int> asyncExample(int value);
+}
+//---
 
-class BindingIntegration {
+class IsolateRpcAsync implements AsyncInterface {
+  late final RpcProvider _provider;
+
+  late final ReceivePort _rxPort;
+
+  late final SendPort _txPort;
+
+  late final Completer _ready;
+
+  // TODO: look up how to simplify
+  IsolateRpcAsync() {
+    _provider = RpcProvider(_providerDispatch, DefaultRpcTimeout);
+    _rxPort = ReceivePort()..listen(_rxListener);
+
+    _ready = Completer();
+    // TODO: consider using spawnUri (?)
+    Isolate.spawn(_isolateMain, _rxPort.sendPort);
+  }
+
+  // "local" member calls rpc provider with corresponding action.
+  Future<int> asyncExample(int value) async {
+    await _ready.future;
+    print("Dart | IsolateAsync#asyncExample:28");
+    return await _provider.rpc(ASYNC_EXAMPLE, value);
+  }
+
+  void _rxListener(dynamic message) {
+    // TODO: don't allow _txPort to be assigned more than once.
+    //  could close existing listener and open a new one
+    print("Dart | IsolateAsync#_rxListener:49 $message");
+    print("runtimeType: ${message.runtimeType}");
+    if (message.runtimeType != MessageClass) {
+      _txPort = message;
+      _ready.complete();
+      return;
+    }
+
+    _provider.dispatch(message);
+  }
+
+  void _providerDispatch(MessageClass message, List<dynamic>? transfer) {
+    // TODO: what about transfer?
+    print("Dart | IsolateAsync#_providerDispatch:78");
+    _txPort.send(message);
+  }
+
+  static void _isolateMain(dynamic sendPort) {
+    // Set up "remote" rpc provider.
+    final isolateProvider =
+        RpcProvider((dynamic message, List<dynamic>? transfer) {
+      sendPort.send(message);
+    }, DefaultRpcTimeout);
+
+    // Create response port for "remote"-bound messages from "local" isolate.
+    // Listen for messages and dispatch them into "remote" provider.
+    final isolateRxPort = ReceivePort()
+      ..listen((dynamic message) {
+        print("Dart | IsolateAsync isolateRxPort listener:52");
+        isolateProvider.dispatch(message);
+      });
+
+    // Send "remote" `SendPort` back to "local" isolate for "remote"-bound sending.
+    sendPort.send(isolateRxPort.sendPort);
+
+    // Instantiate nativeAsync in "remote" isolate context only!
+    final native = NativeAsync();
+
+    // Register rpc provider handlers to call nativeAsync members.
+    // TODO: think through error handling
+    isolateProvider.registerRpcHandler(ASYNC_EXAMPLE, (value) {
+      print("Dart | IsolateAsync ASYNC_EXAMPLE handler:65");
+      return native.asyncExample(value);
+    });
+  }
+}
+
+class NativeAsync implements AsyncInterface {
   late final DynamicLibrary _dl;
-  late final ReceivePort _receivePort;
 
-  BindingIntegration() {
+  NativeAsync() {
     _dl = dlOpen();
     _initDartApi(NativeApi.initializeApiDLData);
   }
@@ -69,26 +111,28 @@ class BindingIntegration {
     return DynamicLibrary.open('./libbindings.so');
   }
 
-  Future<int> asyncExample(int value) async {
-    final _completer = Completer<int>();
-    _receivePort = ReceivePort()..listen((dynamic msg) {
-      _completer.complete(msg);
+  Future<int> asyncExample(int value) {
+    print("Dart | NativeAsync#asyncExample:107");
+    final completer = Completer<int>();
 
-      // TODO: isolate_rpc
-      // _rpc = RpcProvider(dispatchFunction);
-      // _rpc.registerRpcHandler(ACTION_NAME, handlerFunction);
-    // unregister on complete!
-    });
+    final callbackPort = ReceivePort()
+      ..listen((dynamic msg) {
+        print("Dart | NativeAsync#asyncExample cb listener:111");
+        completer.complete(msg);
+      });
 
-    // NB: sends message on send port when complete.
-    _asyncExample(value, _receivePort.sendPort.nativePort);
+    // Call native function via getter.
+    _asyncExample(value, callbackPort.sendPort.nativePort);
 
-    return _completer.future;
+    return completer.future;
   }
+
+  // Getter helpers: wrapping DynamicLibrary#lookup
+  //  and Pointer<NativeFunction>#asFunction
 
   AsyncExample get _asyncExample {
     final nativeFnPointer =
-        _dl.lookup<NativeFunction<TestBindingNative>>('async_example');
+        _dl.lookup<NativeFunction<AsyncExampleNative>>('async_example');
     return nativeFnPointer.asFunction<AsyncExample>();
   }
 
