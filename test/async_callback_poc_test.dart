@@ -1,5 +1,5 @@
 import 'package:test/test.dart';
-import '../bin/async_callback_test_integration.dart';
+import 'package:async_callback_test_integration/async_callback_test_integration.dart';
 
 void main() {
   group('async callback proof-of-concepts', () {
