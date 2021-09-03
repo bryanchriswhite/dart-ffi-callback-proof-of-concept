@@ -78,6 +78,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "3.0.1"
+  event:
+    dependency: transitive
+    description:
+      name: event
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "2.0.5"
   file:
     dependency: transitive
     description:
@@ -120,6 +127,15 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.0.3"
+  isolate_rpc:
+    dependency: "direct main"
+    description:
+      path: "."
+      ref: "bryan/lib"
+      resolved-ref: "3b78eef55e2af23336fe620e685d6a1741a0d87b"
+      url: "https://github.com/leastauthority/isolate_rpc"
+    source: git
+    version: "1.0.0"
   js:
     dependency: transitive
     description:
@@ -338,4 +354,4 @@ packages:
     source: hosted
     version: "3.1.0"
 sdks:
-  dart: ">=2.12.0 <3.0.0"
+  dart: ">=2.13.0-377.7.beta <3.0.0"

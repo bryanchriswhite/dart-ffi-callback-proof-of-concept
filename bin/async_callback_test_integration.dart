@@ -3,61 +3,50 @@ import 'dart:ffi';
 import 'dart:isolate';
 import 'dart:io';
 
-// import 'package:isolate_rpc/classes/Message.dart';
-// import 'package:isolate_rpc/isolate_rpc.dart';
+import 'package:isolate_rpc/classes/Message.dart';
+import 'package:isolate_rpc/isolate_rpc.dart';
 
 const TEST_SIGNAL = 'test_signal';
 const TEST_RPC = 'test_rpc';
 const defaultRpcTimeout = 50;
 
-// RpcProvider? local;
-// RpcProvider? remote;
+class RpcIntegration {
+  static const DefaultRpcTimeout = 50;
 
-// class RpcIntegration {
-//   static const DefaultRpcTimeout = 50;
-//
-//   late RpcProvider _local;
-//   late RpcProvider _remote;
-//
-//   // TODO: look up how to simplify
-//   RpcIntegration() {
-//     _local = RpcProvider(_localDispatch, DefaultRpcTimeout);
-//     _remote = RpcProvider(_remoteDispatch, DefaultRpcTimeout);
-//
-//     // TODO: think through error handling
-//     RpcProvider.error.subscribe((args) {
-//       print("ERROR: ");
-//       print(args);
-//     });
-//
-//     print("main->registerSignalHandler():29");
-//     remote?.registerRpcHandler(TEST_RPC, (value) {
-//       print("main->registerSignalHandler->fn_body:29");
-//       return value;
-//     });
-//   }
-//
-//   Future<int> client_SendFile(int value) async {
-//     print("main->client_SendFile->local.rpc():35");
-//     dynamic _value = await local?.rpc(TEST_RPC, value);
-//     print(_value);
-//     print("main->client_SendFile->local.rpc()_done:37");
-//     return _value;
-//   }
-//
-//   void _localDispatch(MessageClass message, List<dynamic>? transfer) {
-//     print("main->localDispatch:22");
-//     _remote.dispatch(message);
-//   }
-//
-//   void _remoteDispatch(MessageClass message, List<dynamic>? transfer) {
-//     print("main->remoteDispatch:22");
-//     _local.dispatch(message);
-//   }
-// }
+  late RpcProvider _local;
+  late RpcProvider _remote;
+
+  // TODO: look up how to simplify
+  RpcIntegration() {
+    _local = RpcProvider(_localDispatch, DefaultRpcTimeout);
+    _remote = RpcProvider(_remoteDispatch, DefaultRpcTimeout);
+
+    // TODO: think through error handling
+    RpcProvider.error.subscribe((args) {
+      print("ERROR: $args");
+    });
+
+    _remote.registerRpcHandler(TEST_RPC, (value) {
+      return value;
+    });
+  }
+
+  Future<int> asyncExample(int value) async {
+    dynamic _value = await _local.rpc(TEST_RPC, value);
+    return _value;
+  }
+
+  void _localDispatch(MessageClass message, List<dynamic>? transfer) {
+    _remote.dispatch(message);
+  }
+
+  void _remoteDispatch(MessageClass message, List<dynamic>? transfer) {
+    _local.dispatch(message);
+  }
+}
 
 typedef TestBindingNative = Void Function(Int32, IntPtr);
-typedef TestBinding = void Function(int, int);
+typedef AsyncExample = void Function(int, int);
 
 typedef InitDartApiNative = IntPtr Function(Pointer<Void>);
 typedef InitDartApi = int Function(Pointer<Void>);
@@ -80,10 +69,9 @@ class BindingIntegration {
     return DynamicLibrary.open('./libbindings.so');
   }
 
-  Future<int> testBinding(int value) async {
+  Future<int> asyncExample(int value) async {
     final _completer = Completer<int>();
     _receivePort = ReceivePort()..listen((dynamic msg) {
-      print('Dart | ReceivePort listener');
       _completer.complete(msg);
 
       // TODO: isolate_rpc
@@ -93,15 +81,15 @@ class BindingIntegration {
     });
 
     // NB: sends message on send port when complete.
-    _testBinding(value, _receivePort.sendPort.nativePort);
+    _asyncExample(value, _receivePort.sendPort.nativePort);
 
     return _completer.future;
   }
 
-  TestBinding get _testBinding {
+  AsyncExample get _asyncExample {
     final nativeFnPointer =
-        _dl.lookup<NativeFunction<TestBindingNative>>('test_binding_func');
-    return nativeFnPointer.asFunction<TestBinding>();
+        _dl.lookup<NativeFunction<TestBindingNative>>('async_example');
+    return nativeFnPointer.asFunction<AsyncExample>();
   }
 
   InitDartApi get _initDartApi {
