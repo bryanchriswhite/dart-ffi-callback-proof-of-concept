@@ -20,12 +20,10 @@ class NativeAsync implements AsyncInterface {
 
   // Implement `asyncExample` member with SendPort-based callback from native function.
   Future<int> asyncExample(int value) {
-    print("Dart | NativeAsync#asyncExample:107");
     final completer = Completer<int>();
 
     final callbackPort = ReceivePort()
       ..listen((dynamic msg) {
-        print("Dart | NativeAsync#asyncExample cb listener:111");
         completer.complete(msg);
       });
 

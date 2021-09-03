@@ -34,14 +34,12 @@ class IsolateRpcAsync implements AsyncInterface {
   Future<int> asyncExample(int value) async {
     // Wait for `_txPort` to be assinged!
     await _ready.future;
-    print('Dart | IsolateAsync#asyncExample:28');
     return await _provider.rpc(ASYNC_EXAMPLE, value);
   }
 
   void _rxListener(dynamic message) {
     // TODO: don't allow _txPort to be assigned more than once.
     //  could close existing listener and open a new one
-    print('Dart | IsolateAsync#_rxListener:53');
     if (message.runtimeType != MessageClass) {
       _txPort = message;
       _ready.complete();
@@ -53,7 +51,6 @@ class IsolateRpcAsync implements AsyncInterface {
 
   void _providerDispatch(MessageClass message, List<dynamic>? transfer) {
   // TODO: what about transfer?
-  print('Dart | IsolateAsync#_providerDispatch:66');
   _txPort.send(message);
   }
 
@@ -68,7 +65,6 @@ class IsolateRpcAsync implements AsyncInterface {
     // Listen for messages and dispatch them into "remote" provider.
     final isolateRxPort = ReceivePort()
       ..listen((dynamic message) {
-        print("Dart | IsolateAsync isolateRxPort listener:52");
         isolateProvider.dispatch(message);
       });
 
@@ -81,7 +77,6 @@ class IsolateRpcAsync implements AsyncInterface {
     // Register rpc provider handlers to call nativeAsync members.
     // TODO: think through error handling
     isolateProvider.registerRpcHandler(ASYNC_EXAMPLE, (value) {
-      print("Dart | IsolateAsync ASYNC_EXAMPLE handler:65");
       return native.asyncExample(value);
     });
   }
