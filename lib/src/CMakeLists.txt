@@ -5,6 +5,7 @@ add_executable(bindings_test bindings.c include/dart_api_dl.c)
 
 set_target_properties(bindings PROPERTIES
     PUBLIC_HEADER bindings.h
+    PUBLIC_HEADER async.h
     PUBLIC_HEADER include/dart_version.h
     PUBLIC_HEADER include/dart_api.h
     PUBLIC_HEADER include/dart_api_dl.h
